@@ -2,3 +2,4 @@ streamlit
 python-chess
 cairosvg
 pillow
+pyyaml
