@@ -1,45 +1,30 @@
-import streamlit as st
 import chess
 import chess.engine
-from PIL import Image
-import chess.svg
-import cairosvg
-from io import BytesIO
+import yaml
 
-def get_board_image(board):
-    # Convert chess board to SVG and then to PNG
-    svg_data = chess.svg.board(board=board, size=400)
-    png_data = BytesIO()
-    cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), write_to=png_data)
-    return Image.open(png_data)
+# Membaca konfigurasi dari config.yaml
+with open("config.yaml", "r") as file:
+    config = yaml.safe_load(file)
 
-def evaluate_position(board):
-    with chess.engine.SimpleEngine.popen_uci("stockfish") as engine:
-        evaluation = engine.analyse(board, chess.engine.Limit(time=0.1))
-        return evaluation["score"].relative
-def main():
-    st.title("Chess Analysis App")
-    board = chess.Board()
-    
-    # User Input: Move
-    move = st.text_input("Enter your move (e.g., e2e4):")
-    if st.button("Make Move"):
-        if chess.Move.from_uci(move) in board.legal_moves:
-            board.push(chess.Move.from_uci(move))
-        else:
-            st.error("Invalid move! Try again.")
-    
-    # Display Chess Board
-    st.image(get_board_image(board))
-    
-    # Evaluation of Position
-    evaluation = evaluate_position(board)
-    st.write(f"Position Evaluation: {evaluation}")
-    
-    # Best Move Suggestion
-    with chess.engine.SimpleEngine.popen_uci("stockfish") as engine:
-        best_move = engine.play(board, chess.engine.Limit(time=0.1)).move
-        st.write(f"Suggested Best Move: {best_move}")
+STOCKFISH_PATH = config["stockfish_path"]  # Path ke Stockfish
+DEPTH = config["depth"]  # Kedalaman analisis
+MOVE_TIME = config["move_time"]  # Waktu pencarian per langkah (dalam detik)
 
+# Inisialisasi engine Stockfish
+engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+
+def get_best_move(fen: str):
+    """Mendapatkan langkah terbaik berdasarkan FEN (Forsyth-Edwards Notation)"""
+    board = chess.Board(fen)
+    result = engine.play(board, chess.engine.Limit(depth=DEPTH, time=MOVE_TIME))
+    return result.move
+
+# Contoh penggunaan
 if __name__ == "__main__":
-    main()
+    # Papan awal
+    fen_position = chess.STARTING_FEN
+    best_move = get_best_move(fen_position)
+    print("Best Move:", best_move)
+
+# Tutup engine saat selesai
+engine.quit()

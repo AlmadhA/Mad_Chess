@@ -1,0 +1,3 @@
+stockfish_path: "stockfish/stockfish"
+depth: 15
+move_time: 0.5
